@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # Main social media pipeline application
+  pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: social_media_pipeline
+    volumes:
+      - ./src:/app/src
+      - ./logs:/app/logs
+      - ./data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
+      - MAX_POSTS=100
+      - PRODUCTION_INTERVAL=1.0
+      - QUEUE_MAX_SIZE=50
+    restart: unless-stopped
+    networks:
+      - pipeline_network
+
+  # Optional: Redis for advanced queue management
+  redis:
+    image: redis:7-alpine
+    container_name: pipeline_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - pipeline_network
+    profiles:
+      - redis
+
+  # Optional: PostgreSQL for data persistence
+  postgres:
+    image: postgres:15-alpine
+    container_name: pipeline_postgres
+    environment:
+      - POSTGRES_DB=social_media_pipeline
+      - POSTGRES_USER=pipeline_user
+      - POSTGRES_PASSWORD=pipeline_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+    networks:
+      - pipeline_network
+    profiles:
+      - postgres
+
+  # Optional: Monitoring with basic web interface
+  monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile.monitor
+    container_name: pipeline_monitor
+    ports:
+      - "8080:8080"
+    depends_on:
+      - pipeline
+    environment:
+      - PIPELINE_HOST=pipeline
+      - PIPELINE_PORT=5000
+    restart: unless-stopped
+    networks:
+      - pipeline_network
+    profiles:
+      - monitoring
+
+volumes:
+  redis_data:
+  postgres_data:
+
+networks:
+  pipeline_network:
+    driver: bridge
+
+# Usage:
+# Basic pipeline only:        docker-compose up pipeline
+# With Redis queue:          docker-compose --profile redis up
+# With PostgreSQL:           docker-compose --profile postgres up
+# With monitoring:           docker-compose --profile monitoring up
+# Full stack:                docker-compose --profile redis --profile postgres --profile monitoring up

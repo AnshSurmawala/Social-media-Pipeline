@@ -1,0 +1,13 @@
+# Core dependencies for the social media data pipeline
+# No external dependencies required - using only Python standard library
+
+# Development and testing dependencies (optional)
+# pytest>=7.0.0
+# pytest-cov>=4.0.0
+# black>=22.0.0
+# flake8>=5.0.0
+
+# Production dependencies (optional)
+# psycopg2-binary>=2.9.0  # For PostgreSQL database integration
+# redis>=4.0.0           # For Redis queue/cache integration
+# requests>=2.28.0       # For API integrations
